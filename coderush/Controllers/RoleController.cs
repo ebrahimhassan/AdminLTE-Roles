@@ -26,4 +26,20 @@ namespace coderush.Controllers
             return View(roles);
         }
     }
+
+
+    [Authorize(Roles = Services.App.Pages.Home.RoleName)]
+    public class HomeController : Controller
+    {
+        public HomeController()
+        {
+
+        }
+
+        //consume custom security service to get all roles
+        public IActionResult Index()
+        {
+            return View();
+        }
+    }
 }

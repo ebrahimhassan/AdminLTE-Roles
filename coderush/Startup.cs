@@ -8,14 +8,13 @@ using Microsoft.AspNetCore.Identity.UI;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using coderush.Data;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using coderush.Services.Security;
 using coderush.Models;
-
+using Microsoft.Extensions.Hosting;
 namespace coderush
 {
     public class Startup
@@ -41,7 +40,7 @@ namespace coderush
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(
                     Configuration.GetConnectionString("DefaultConnection")));
-            
+
             /// Get Custom Identity Default Options
             IConfigurationSection identityDefaultOptionsConfigurationSection = Configuration.GetSection("IdentityDefaultOptions");
 
@@ -70,7 +69,7 @@ namespace coderush
                 // email confirmation require
                 options.SignIn.RequireConfirmedEmail = identityDefaultOptions.SignInRequireConfirmedEmail;
             })
-                .AddDefaultUI(UIFramework.Bootstrap4)
+                .AddDefaultUI()
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
 
@@ -80,7 +79,7 @@ namespace coderush
             {
                 // Cookie settings
                 options.Cookie.HttpOnly = identityDefaultOptions.CookieHttpOnly;
-                options.Cookie.Expiration = TimeSpan.FromDays(identityDefaultOptions.CookieExpiration);
+                options.ExpireTimeSpan = TimeSpan.FromDays(identityDefaultOptions.CookieExpiration);
                 options.SlidingExpiration = identityDefaultOptions.SlidingExpiration;
             });
 
@@ -93,12 +92,12 @@ namespace coderush
 
             /// Add Custom Common Database servcie
             services.AddScoped<Services.Database.ICommon, Services.Database.Common>();
-
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+            services.AddMvc();
+            services.AddRazorPages();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, Services.Database.ICommon dbInit)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, Services.Database.ICommon dbInit)
         {
             //custom exception handling, to catch 404
             app.Use(async (context, next) =>
@@ -132,15 +131,26 @@ namespace coderush
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
-            
+
 
             app.UseAuthentication();
 
-            app.UseMvc(routes =>
+            //app.UseMvc(routes =>
+            //{
+            //    routes.MapRoute(
+            //        name: "default",
+            //        template: "{controller=Todo}/{action=Index}/{id?}");
+            //});
+
+            app.UseRouting();
+            app.UseAuthorization();
+            app.UseEndpoints(endpoints =>
             {
-                routes.MapRoute(
+                endpoints.MapControllerRoute(
                     name: "default",
-                    template: "{controller=Todo}/{action=Index}/{id?}");
+                pattern: "{controller=Home}/{action=Index}/{id?}");
+                endpoints.MapControllers();
+                endpoints.MapRazorPages();
             });
         }
     }
